@@ -42,7 +42,6 @@ def consolidate_directories(dirs):
             match = pattern.match(dir_path)
             if match:
                 reduced_dir = match.group(1)
-                #print(reduced_dir)
                 consolidated.add(reduced_dir)
 
     return sorted(consolidated)
@@ -61,10 +60,13 @@ def generate_code_workspace_file(source_dirs):
             continue
     
     relative_dirs.sort(key=lambda x: (x != '.', x))
-    source_dirs = consolidate_directories(relative_dirs)
+    consolidated_dirs = consolidate_directories(relative_dirs)
+    
+    # 检查目录是否存在，只保留存在的目录
+    existing_dirs = [dir_path for dir_path in consolidated_dirs if os.path.exists(dir_path)]
     
     workspace_data = {
-        "folders": [{"path": dir_path} for dir_path in source_dirs],
+        "folders": [{"path": dir_path} for dir_path in existing_dirs],
         "settings": {"clangd.arguments": [
                 "--compile-commands-dir=.",
                 "--header-insertion=never"
