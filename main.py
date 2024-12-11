@@ -32,17 +32,28 @@ def extract_source_dirs(compile_commands):
 # 过滤路径
 def consolidate_directories(dirs):
     consolidated = set()
-    dirs = sorted(dirs)
+    
+    # 首先根据目录深度（反斜杠数量）排序，浅的在前面
+    dirs = sorted(dirs, key=lambda x: x.count('\\'))
 
-    pattern = re.compile(r"^(.*?\\[a-zA-Z][^\\]*)")
+    # 正则表达式匹配前两级目录（如果符合）
+    pattern = re.compile(r"^(.*?\\[a-zA-Z][^\\]*\\[a-zA-Z][^\\]*)")
 
     for dir_path in dirs:
         if dir_path == '.':
             consolidated.add('.')
         elif dir_path.startswith('..'):
+            print(dir_path)
+            # 检查路径是否在现有集合中包含作为上一级目录的情况
+            if any(dir_path.startswith(d + '\\') for d in consolidated):
+                continue  # 如果上级目录已经在集合中，就跳过这个路径
+            
             match = pattern.match(dir_path)
             if match:
                 reduced_dir = match.group(1)
+                # 规范化路径以确保输出一致性
+                reduced_dir = os.path.normpath(reduced_dir)
+                #print(reduced_dir)  # 输出调试信息
                 consolidated.add(reduced_dir)
 
     return sorted(consolidated)
