@@ -1,7 +1,7 @@
 import json
 import os
 import re
-
+#读取compile_commands.json 进行路径过滤
 def extract_source_dirs(compile_commands):
     source_dirs = set()
 
@@ -11,14 +11,14 @@ def extract_source_dirs(compile_commands):
         if file_path.endswith('.c'):
             dir_path = os.path.dirname(os.path.abspath(file_path))
             source_dirs.add(dir_path)
-
+            # command 或者arguments
             command = entry.get('command') or entry.get('arguments')
             
             if isinstance(command, str):
                 parts = command.split()
             else:
                 parts = command
-                
+            # 读取-I或者/I
             for i, part in enumerate(parts):
                 if part.startswith('-I'):
                     include_dir = part[2:] if len(part) > 2 else parts[i + 1]
@@ -28,7 +28,8 @@ def extract_source_dirs(compile_commands):
                     source_dirs.add(os.path.abspath(include_dir))
 
     return sorted(source_dirs)
-
+    
+# 过滤路径
 def consolidate_directories(dirs):
     consolidated = set()
     dirs = sorted(dirs)
@@ -45,7 +46,8 @@ def consolidate_directories(dirs):
                 consolidated.add(reduced_dir)
 
     return sorted(consolidated)
-
+    
+#产生workspace文件
 def generate_code_workspace_file(source_dirs):
 
     current_working_directory = os.getcwd()
