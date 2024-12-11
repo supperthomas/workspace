@@ -43,7 +43,7 @@ def consolidate_directories(dirs):
         if dir_path == '.':
             consolidated.add('.')
         elif dir_path.startswith('..'):
-            print(dir_path)
+            #print(dir_path)
             # 检查路径是否在现有集合中包含作为上一级目录的情况
             if any(dir_path.startswith(d + '\\') for d in consolidated):
                 continue  # 如果上级目录已经在集合中，就跳过这个路径
