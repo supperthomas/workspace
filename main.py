@@ -78,14 +78,28 @@ def generate_code_workspace_file(source_dirs):
     # 检查目录是否存在，只保留存在的目录
     existing_dirs = [dir_path for dir_path in consolidated_dirs if os.path.exists(dir_path)]
     
+    # 为每个目录添加名称，使用最后两个目录名
+    folders = []
+    for dir_path in existing_dirs:
+        if dir_path == '.':
+            folders.append({"path": dir_path})
+            continue
+        components = dir_path.strip(os.sep).split(os.sep)
+        meaningful_components = [comp for comp in components if comp and comp != '..']
+        if len(meaningful_components) >= 2:
+            name = '/'.join(meaningful_components[-2:])
+        else:
+            name = '/'.join(meaningful_components)
+        
+        folders.append({"path": dir_path, "name": name})
+
     workspace_data = {
-        "folders": [{"path": dir_path} for dir_path in existing_dirs],
+        "folders": folders,
         "settings": {"clangd.arguments": [
                 "--compile-commands-dir=.",
                 "--header-insertion=never"
             ]}
     }
-
     workspace_filename = f'{current_folder_name}.code-workspace'
     with open(workspace_filename, 'w') as f:
         json.dump(workspace_data, f, indent=4)
