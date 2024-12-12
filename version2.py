@@ -95,7 +95,7 @@ def is_path_in_tree(path, tree):
         return False
 
 
-def generate_code_workspace_file(source_dirs):
+def generate_code_workspace_file(source_dirs,command_json_path):
     current_working_directory = os.getcwd()
     current_folder_name = os.path.basename(current_working_directory)
 
@@ -116,7 +116,7 @@ def generate_code_workspace_file(source_dirs):
         ],
         "settings": {
             "clangd.arguments": [
-                "--compile-commands-dir=.",
+                f"--compile-commands-dir={command_json_path}",
                 "--header-insertion=never"
             ],
             "files.exclude": {dir: True for dir in relative_dirs}
@@ -130,7 +130,7 @@ def generate_code_workspace_file(source_dirs):
     print(f'Workspace file {workspace_filename} created.')
 
 
-def main(root_path):
+def main(root_path,command_json_path):
     with open('compile_commands.json', 'r') as f:
         compile_commands = json.load(f)
 
@@ -163,15 +163,26 @@ def main(root_path):
 
     #print("Excluded Folders:")
     #print(exclude_fold)
-    generate_code_workspace_file(exclude_fold)
+    generate_code_workspace_file(exclude_fold,command_json_path)
 
 
 if __name__ == '__main__':
-    parser = argparse.ArgumentParser(description='Process some paths.')
+    parser = argparse.ArgumentParser(description='python command_to_workspace.py compile_commands.json ../../../../     ../../../ is rel root path')
+    parser.add_argument('command_json', type=str, help='The compile_commands.json to start from')
     parser.add_argument('root_path', type=str, help='The root path to start from')
+
+
     args = parser.parse_args()
-    root_path = args.root_path
-    root_path_abs = os.path.abspath(root_path)
-    #print(root_path_abs)
-    main(root_path_abs)
+    # 检查参数是否足够
+    if len(vars(args)) < 2:
+        parser.print_help()
+    else:
+        root_path = args.root_path
+        command_json = args.command_json
+        root_path_abs = os.path.abspath(root_path)
+        print(root_path_abs)
+        command_json_path = os.path.relpath(command_json, start=root_path_abs)
+        command_json_dir = os.path.join(os.path.dirname(command_json_path), '')
+        print(command_json_dir)
+        main(root_path_abs,command_json_dir)
 
