@@ -32,21 +32,17 @@ def build_tree(paths):
     tree = {}
     current_working_directory = os.getcwd()
     current_folder_name = os.path.basename(current_working_directory)
-    #过滤异常路径
+    #过滤异常和不存在的路径
     relative_dirs = []
-    for dir_path in paths:
-        try:
-            rel_path = os.path.relpath(dir_path, start=current_working_directory)
-            relative_dirs.append(rel_path)
-        except ValueError:
-            print(f"delete dir_path:{dir_path}")
-            paths.delete(dir_path)
-            continue
     for path in paths:
         normalized_path = os.path.normpath(path)
-        add_path_to_tree(tree, normalized_path)
-    return tree
+        try:
+            rel_path = os.path.relpath(normalized_path, start=current_working_directory)
+            add_path_to_tree(tree, normalized_path)
+        except ValueError:
+            print(f"Remove unexcpect dir:{path}")
 
+    return tree
 
 def print_tree(tree, indent=''):
     for key, subtree in sorted(tree.items()):
@@ -78,7 +74,7 @@ def extract_source_dirs(compile_commands):
                 elif part.startswith('/I'):
                     include_dir = part[2:] if len(part) > 2 else parts[i + 1]
                     source_dirs.add(os.path.abspath(include_dir))
-    print(f"Source Directories: {source_dirs}")
+    #print(f"Source Directories: {source_dirs}")
     return sorted(source_dirs)
 
 
@@ -87,8 +83,8 @@ def is_path_in_tree(path, tree):
     current_level = tree
     found_first_node = False
     root_key = list(tree.keys())[0]
-    print(root_key)
-    print(path)
+    #print(root_key)
+    #print(path)
     index_start = parts.index(root_key)
     length = len(parts)
     try:
@@ -140,10 +136,10 @@ def main(root_path):
 
     source_dirs = extract_source_dirs(compile_commands)
     tree = build_tree(source_dirs)
-    print(tree)
+    #print_tree(tree)
     filtered_tree = filt_tree(tree)
     print("Filtered Directory Tree:")
-    print_tree(filtered_tree)
+    #print_tree(filtered_tree)
 
     # 打印filtered_tree的root节点的相对路径
     root_key = list(filtered_tree.keys())[0]
@@ -165,8 +161,8 @@ def main(root_path):
             if not is_path_in_tree(dir_path, filtered_tree):
                 exclude_fold.add(dir_path)
 
-    print("Excluded Folders:")
-    print(exclude_fold)
+    #print("Excluded Folders:")
+    #print(exclude_fold)
     generate_code_workspace_file(exclude_fold)
 
 
@@ -176,6 +172,6 @@ if __name__ == '__main__':
     args = parser.parse_args()
     root_path = args.root_path
     root_path_abs = os.path.abspath(root_path)
-    print(root_path_abs)
+    #print(root_path_abs)
     main(root_path_abs)
 
