@@ -119,7 +119,7 @@ def generate_code_workspace_file(source_dirs,command_json_path):
                 f"--compile-commands-dir={command_json_path}",
                 "--header-insertion=never"
             ],
-            "files.exclude": {dir.replace('\\','/'): True for dir in relative_dirs}
+            "files.exclude": {dir.replace('\\','/'): True for dir in sorted(relative_dirs)}
         }
     }
     workspace_filename = f'{current_folder_name}.code-workspace'
