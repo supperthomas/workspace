@@ -52,7 +52,6 @@ def print_tree(tree, indent=''):
 
 def extract_source_dirs(compile_commands):
     source_dirs = set()
-
     for entry in compile_commands:
         file_path = os.path.abspath(entry['file'])
 
@@ -98,10 +97,13 @@ def is_path_in_tree(path, tree):
 def generate_code_workspace_file(source_dirs,command_json_path):
     current_working_directory = os.getcwd()
     current_folder_name = os.path.basename(current_working_directory)
-
+    command_json_path = os.path.relpath(command_json_path, root_path)
+    command_json_path = os.path.join(os.path.dirname(command_json_path), '').replace('\\','/')
     relative_dirs = []
     for dir_path in source_dirs:
         try:
+            if current_working_directory in dir_path:
+                continue
             rel_path = os.path.relpath(dir_path, root_path)
             relative_dirs.append(rel_path)
         except ValueError:
@@ -131,14 +133,15 @@ def generate_code_workspace_file(source_dirs,command_json_path):
 
 
 def main(root_path,command_json_path):
-    with open('compile_commands.json', 'r') as f:
+    with open(command_json_path, 'r') as f:
         compile_commands = json.load(f)
 
     source_dirs = extract_source_dirs(compile_commands)
+    
     tree = build_tree(source_dirs)
     #print_tree(tree)
     filtered_tree = filt_tree(tree)
-    print("Filtered Directory Tree:")
+    #print("Filtered Directory Tree:")
     #print_tree(filtered_tree)
 
     # 打印filtered_tree的root节点的相对路径
@@ -181,8 +184,6 @@ if __name__ == '__main__':
         command_json = args.command_json
         root_path_abs = os.path.abspath(root_path)
         print(root_path_abs)
-        command_json_path = os.path.relpath(command_json, start=root_path_abs)
-        command_json_dir = os.path.join(os.path.dirname(command_json_path), '')
-        print(command_json_dir)
-        main(root_path_abs,command_json_dir)
-
+        command_json_path = os.path.abspath(command_json)
+        print(command_json_path)
+        main(root_path_abs,command_json_path)
