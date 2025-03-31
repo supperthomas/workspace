@@ -24,7 +24,7 @@ def replace_march_in_json(file_path):
                 for key, value in obj.items():
                     if isinstance(value, str):
                         # 使用正则表达式替换 " -march=**"（注意前面的空格）
-                        obj[key] = re.sub(r' -march=[^ ]*', '', value)
+                        obj[key] = re.sub(r' -march=[^ ]* ', '', value)
                     elif isinstance(value, (dict, list)):
                         replace_march(value)
             elif isinstance(obj, list):
