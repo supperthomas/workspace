@@ -40,7 +40,8 @@ def build_tree(paths):
             rel_path = os.path.relpath(normalized_path, start=current_working_directory)
             add_path_to_tree(tree, normalized_path)
         except ValueError:
-            print(f"Remove unexcpect dir:{path}")
+            # print(f"Remove unexcpect dir:{path}")
+            pass
 
     return tree
 
@@ -52,6 +53,7 @@ def print_tree(tree, indent=''):
 
 def extract_source_dirs(compile_commands):
     source_dirs = set()
+
     for entry in compile_commands:
         file_path = os.path.abspath(entry['file'])
 
@@ -94,7 +96,7 @@ def is_path_in_tree(path, tree):
         return False
 
 
-def generate_code_workspace_file(source_dirs,command_json_path):
+def generate_code_workspace_file(source_dirs,command_json_path,root_path):
     current_working_directory = os.getcwd()
     current_folder_name = os.path.basename(current_working_directory)
     command_json_path = os.path.relpath(command_json_path, root_path)
@@ -102,14 +104,45 @@ def generate_code_workspace_file(source_dirs,command_json_path):
     relative_dirs = []
     for dir_path in source_dirs:
         try:
-            if current_working_directory in dir_path:
-                continue
             rel_path = os.path.relpath(dir_path, root_path)
             relative_dirs.append(rel_path)
         except ValueError:
             continue
 
     root_rel_path = os.path.relpath(root_path, current_working_directory)
+    print(root_path)
+    print(current_working_directory)
+    print("在root:"+root_rel_path + "创建workspace")
+    workspace_data = {
+        "folders": [
+            {
+                "path": f"{root_rel_path}"
+            }
+        ],
+        "settings": {
+            "clangd.arguments": [
+                f"--compile-commands-dir={command_json_path}",
+                "--header-insertion=never"
+            ],
+            "files.exclude": {dir.replace('\\','/'): True for dir in sorted(relative_dirs)}
+        }
+    }
+    workspace_filename = f'{current_folder_name}.code-workspace'
+    
+    # print(workspace_data)
+    print("在目录"+current_working_directory + "创建workspace")
+    
+    with open(workspace_filename, 'w') as f:
+        json.dump(workspace_data, f, indent=4)
+
+    os.chdir(root_path)
+    current_working_directory = os.getcwd()
+
+    root_rel_path = os.path.relpath(root_path, current_working_directory)
+    print(root_path)
+    print(current_working_directory)
+    print("在root:"+root_rel_path + "创建workspace")
+
     workspace_data = {
         "folders": [
             {
@@ -126,6 +159,7 @@ def generate_code_workspace_file(source_dirs,command_json_path):
     }
     workspace_filename = f'{current_folder_name}.code-workspace'
     # print(workspace_data)
+    print("在目录"+current_working_directory + "创建workspace")
     with open(workspace_filename, 'w') as f:
         json.dump(workspace_data, f, indent=4)
 
@@ -137,7 +171,6 @@ def main(root_path,command_json_path):
         compile_commands = json.load(f)
 
     source_dirs = extract_source_dirs(compile_commands)
-    
     tree = build_tree(source_dirs)
     #print_tree(tree)
     filtered_tree = filt_tree(tree)
@@ -146,7 +179,7 @@ def main(root_path,command_json_path):
 
     # 打印filtered_tree的root节点的相对路径
     root_key = list(filtered_tree.keys())[0]
-    print(f"Root node relative path: {root_key}")
+    #print(f"Root node relative path: {root_key}")
 
     # 初始化exclude_fold集合
     exclude_fold = set()
@@ -166,7 +199,7 @@ def main(root_path,command_json_path):
 
     #print("Excluded Folders:")
     #print(exclude_fold)
-    generate_code_workspace_file(exclude_fold,command_json_path)
+    generate_code_workspace_file(exclude_fold,command_json_path,root_path)
 
 
 if __name__ == '__main__':
@@ -180,9 +213,9 @@ if __name__ == '__main__':
     if len(vars(args)) < 2:
         parser.print_help()
     else:
-        root_path = args.root_path
+        root_path_abs = args.root_path
         command_json = args.command_json
-        root_path_abs = os.path.abspath(root_path)
+        root_path_abs = os.path.abspath(root_path_abs)
         print(root_path_abs)
         command_json_path = os.path.abspath(command_json)
         print(command_json_path)
