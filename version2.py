@@ -40,7 +40,8 @@ def build_tree(paths):
             rel_path = os.path.relpath(normalized_path, start=current_working_directory)
             add_path_to_tree(tree, normalized_path)
         except ValueError:
-            print(f"Remove unexcpect dir:{path}")
+            # print(f"Remove unexcpect dir:{path}")
+            pass
 
     return tree
 
@@ -52,6 +53,7 @@ def print_tree(tree, indent=''):
 
 def extract_source_dirs(compile_commands):
     source_dirs = set()
+
     for entry in compile_commands:
         file_path = os.path.abspath(entry['file'])
 
@@ -97,17 +99,38 @@ def is_path_in_tree(path, tree):
 def generate_code_workspace_file(source_dirs,command_json_path):
     current_working_directory = os.getcwd()
     current_folder_name = os.path.basename(current_working_directory)
-    command_json_path = os.path.relpath(command_json_path, root_path)
-    command_json_path = os.path.join(os.path.dirname(command_json_path), '').replace('\\','/')
+    
     relative_dirs = []
     for dir_path in source_dirs:
         try:
-            if current_working_directory in dir_path:
-                continue
             rel_path = os.path.relpath(dir_path, root_path)
             relative_dirs.append(rel_path)
         except ValueError:
             continue
+
+    root_rel_path = os.path.relpath(root_path, current_working_directory)
+    workspace_data = {
+        "folders": [
+            {
+                "path": f"{root_rel_path}"
+            }
+        ],
+        "settings": {
+            "clangd.arguments": [
+                f"--compile-commands-dir={command_json_path}",
+                "--header-insertion=never"
+            ],
+            "files.exclude": {dir.replace('\\','/'): True for dir in sorted(relative_dirs)}
+        }
+    }
+    workspace_filename = f'{current_folder_name}.code-workspace'
+    
+    # print(workspace_data)
+    with open(workspace_filename, 'w') as f:
+        json.dump(workspace_data, f, indent=4)
+
+    os.chdir(root_path)
+    current_working_directory = os.getcwd()
 
     root_rel_path = os.path.relpath(root_path, current_working_directory)
     workspace_data = {
@@ -133,11 +156,10 @@ def generate_code_workspace_file(source_dirs,command_json_path):
 
 
 def main(root_path,command_json_path):
-    with open(command_json_path, 'r') as f:
+    with open(root_path+'\\'+command_json_path+ 'compile_commands.json', 'r') as f:
         compile_commands = json.load(f)
 
     source_dirs = extract_source_dirs(compile_commands)
-    
     tree = build_tree(source_dirs)
     #print_tree(tree)
     filtered_tree = filt_tree(tree)
@@ -146,7 +168,7 @@ def main(root_path,command_json_path):
 
     # 打印filtered_tree的root节点的相对路径
     root_key = list(filtered_tree.keys())[0]
-    print(f"Root node relative path: {root_key}")
+    #print(f"Root node relative path: {root_key}")
 
     # 初始化exclude_fold集合
     exclude_fold = set()
@@ -183,7 +205,9 @@ if __name__ == '__main__':
         root_path = args.root_path
         command_json = args.command_json
         root_path_abs = os.path.abspath(root_path)
-        print(root_path_abs)
-        command_json_path = os.path.abspath(command_json)
-        print(command_json_path)
-        main(root_path_abs,command_json_path)
+        #print(root_path_abs)
+        command_json_path = os.path.relpath(command_json, start=root_path_abs)
+        command_json_dir = os.path.join(os.path.dirname(command_json_path), '')
+        #print(command_json_dir)
+        main(root_path_abs,command_json_dir)
+
